@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>CIPHER | Admin Portal</title>
+    <style>
+        body { font-family: 'Inter', sans-serif; background: #f0f2f5; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        
+        /* Login Box Styles */
+        #loginOverlay { background: white; padding: 40px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); text-align: center; width: 350px; }
+        input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
+        button { background: #0056b3; color: white; border: none; padding: 12px; width: 100%; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        
+        /* Dashboard Styles (Hidden initially) */
+        #dashboard { display: none; width: 90%; max-width: 1000px; height: 90vh; overflow-y: auto; background: white; padding: 30px; border-radius: 12px; }
+        .report-card { border-left: 5px solid #0056b3; padding: 15px; margin-bottom: 15px; background: #f8f9fa; border-radius: 4px; }
+    </style>
+</head>
+<body>
+
+    <div id="loginOverlay">
+        <h2>🛡️ Admin Access</h2>
+        <p>Please enter the Counselor password</p>
+        <input type="password" id="adminPass" placeholder="Enter Password">
+        <button onclick="checkLogin()">Login to Dashboard</button>
+        <p id="error" style="color:red; display:none;">Incorrect Password!</p>
+    </div>
+
+    <div id="dashboard">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <h1>Guidance Counselor Dashboard</h1>
+            <button onclick="location.reload()" style="width:auto; padding:8px 15px; background:#666;">Logout</button>
+        </div>
+        <hr>
+        <div id="reportList"></div>
+    </div>
+
+   <script>
+    function checkLogin() {
+        const pass = document.getElementById('adminPass').value;
+        // The password you set for your defense
+        if(pass === "SHS2026") { 
+            document.getElementById('loginOverlay').style.display = 'none';
+            document.getElementById('dashboard').style.display = 'block';
+            loadReports();
+        } else {
+            document.getElementById('error').style.display = 'block';
+        }
+    }
+
+   async function loadReports() {
+    const list = document.getElementById('reportList');
+    
+    try {
+        // Request the list of reports from server.js
+        const response = await fetch('http://localhost:3000/api/reports');
+        const reports = await response.json();
+
+        if(reports.length === 0) {
+            list.innerHTML = "<p>No reports in the database yet.</p>";
+            return;
+        }
+
+        list.innerHTML = reports.map(r => `
+            <div class="report-card">
+                <strong>Ref ID: ${r.id}</strong> | <small>${r.timestamp}</small><br>
+                <strong>Incident:</strong> ${r.type.toUpperCase()}<br>
+                <p><strong>Details:</strong> ${r.description}</p>
+                <span style="color:#0056b3; font-weight:bold;">Status: ${r.status}</span>
+            </div>
+        `).reverse().join(''); 
+
+    } catch (error) {
+        list.innerHTML = "<p style='color:red;'>Error: Could not connect to the server database.</p>";
+          }
+    }
+</script>    </script>
+</body>
+</html>

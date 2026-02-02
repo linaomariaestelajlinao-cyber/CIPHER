@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SHS Anonymous Reporting System</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #0056b3;
+            --secondary: #20c997;
+            --danger: #dc3545;
+            --bg: #f8f9fa;
+            --text: #333;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            line-height: 1.6;
+        }
+
+        nav {
+            background: white;
+            padding: 1rem 10%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .logo { font-weight: 700; color: var(--primary); font-size: 1.2rem; }
+
+        .panic-btn {
+            background: var(--danger);
+            color: white;
+            padding: 8px 15px;
+            border-radius: 5px;
+            text-decoration: none;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+
+        .hero {
+            background: linear-gradient(135deg, var(--primary), #003366);
+            color: white;
+            padding: 60px 10%;
+            text-align: center;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: -40px auto 40px;
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .form-group { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 8px; font-weight: 600; }
+        
+        input, select, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            box-sizing: border-box;
+        }
+
+        textarea { height: 120px; resize: vertical; }
+
+        .btn-submit {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 15px;
+            width: 100%;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .btn-submit:hover { background: #004494; }
+
+        .status-check {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px dashed #ccc;
+            text-align: center;
+        }
+
+        .counselor-preview {
+            display: none;
+            margin-top: 40px;
+            background: #e9ecef;
+            padding: 20px;
+            border-radius: 8px;
+        }
+
+        .success-msg {
+            display: none;
+            background: #d4edda;
+            color: #155724;
+            padding: 20px;
+            border-radius: 6px;
+            text-align: center;
+        }
+
+        .id-badge {
+            font-family: monospace;
+            background: #eee;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 1.2rem;
+            display: block;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+
+    <nav>
+        <div class="logo">🛡️ CIPHER</div>
+        <a href="https://google.com" class="panic-btn">EXIT (ESC)</a>
+    </nav>
+
+    <header class="hero">
+        <h1>Anonymous Reporting System</h1>
+        <p>Speak Up without standing up</p>
+    </header>
+
+    <div class="container">
+        <div id="reportFormArea">
+            <div class="form-group">
+                <label>Type of Incident</label>
+                <select id="incidentType">
+                    <option value="cyber">Cyberbullying</option>
+                    <option value="physical">Physical Bullying</option>
+                    <option value="verbal">Verbal/Emotional</option>
+                    <option value="social">Social Exclusion</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Date & Time of Incident (Approximate)</label>
+                <input type="datetime-local" id="incidentDate">
+            </div>
+
+            <div class="form-group">
+                <label>Description</label>
+                <textarea id="description" placeholder="Describe what happened. Do not include your name if you wish to remain anonymous."></textarea>
+            </div>
+
+            <button class="btn-submit" onclick="handleSubmission()">Submit Anonymous Report</button>
+        </div>
+
+        <div id="successArea" class="success-msg">
+            <h2>Report Submitted Securely</h2>
+            <p>Write down this Reference ID to check status later:</p>
+            <span id="referenceID" class="id-badge"></span>
+            <p>This ID is the only way to track your report.</p>
+            <button onclick="location.reload()" style="background:none; border:1px solid #155724; cursor:pointer; padding: 5px 10px; border-radius: 4px;">New Report</button>
+        </div>
+
+        <div class="status-check">
+            <p>Already submitted? <a href="#" onclick="toggleCounselor()">Admin View (For Demo)</a></p>
+        </div>
+
+        <div id="counselorView" class="counselor-preview">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h3>Counselor Dashboard</h3>
+                <button onclick="downloadCSV()" style="background: var(--secondary); color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; font-weight: bold;">
+                    📥 Download CSV
+                </button>
+            </div>
+            <div id="reportList">
+                <p>Loading reports from server...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // API URL - Ensure your server.js is running on this port
+        const API_BASE = 'http://localhost:3000/api';
+
+        // 1. Student Submission Logic
+        async function handleSubmission() {
+            const type = document.getElementById('incidentType').value;
+            const date = document.getElementById('incidentDate').value;
+            const desc = document.getElementById('description').value;
+
+            if(!desc) { alert("Please provide details."); return; }
+
+            const refID = "SHS-" + Math.random().toString(36).substr(2, 6).toUpperCase();
+
+            const newReport = {
+                id: refID,
+                type: type,
+                date: date,
+                description: desc,
+                timestamp: new Date().toLocaleString(),
+                status: "Pending Investigation"
+            };
+
+            try {
+                // Fixed Fetch Syntax
+                const response = await fetch(`${API_BASE}/report`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(newReport)
+                });
+
+                if (response.ok) {
+                    document.getElementById('reportFormArea').style.display = 'none';
+                    document.getElementById('successArea').style.display = 'block';
+                    document.getElementById('referenceID').innerText = refID;
+                }
+            } catch (error) {
+                alert("Submission Failed! Ensure 'node server.js' is running in your terminal.");
+                console.error("Connection error:", error);
+            }
+        }
+
+        // 2. Admin View Toggle
+        function toggleCounselor() {
+            const view = document.getElementById('counselorView');
+            view.style.display = view.style.display === 'none' ? 'block' : 'none';
+            if (view.style.display === 'block') updateAdminDashboard();
+        }
+
+        // 3. Fetch and Show Reports in Dashboard
+        async function updateAdminDashboard() {
+            const list = document.getElementById('reportList');
+            try {
+                const response = await fetch(`${API_BASE}/reports`);
+                const reports = await response.json();
+
+                if(reports.length === 0) {
+                    list.innerHTML = "<p>No reports in the database.</p>";
+                    return;
+                }
+
+                list.innerHTML = reports.map(r => `
+                    <div style="background:white; padding:15px; margin-bottom:10px; border-radius:4px; border-left:4px solid var(--primary); box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
+                        <strong>ID: ${r.id}</strong> | <small>${r.timestamp}</small><br>
+                        <strong>Type:</strong> ${r.type.toUpperCase()}<br>
+                        <p style="font-size:0.9rem; margin: 10px 0;">${r.description}</p>
+                        <span style="color:var(--primary); font-weight:bold; font-size:0.8rem">Status: ${r.status}</span>
+                    </div>
+                `).reverse().join('');
+            } catch (error) {
+                list.innerHTML = "<p style='color:red'>Error connecting to database.</p>";
+            }
+        }
+
+        // 4. Export to CSV Logic
+        async function downloadCSV() {
+            try {
+                const response = await fetch(`${API_BASE}/reports`);
+                const reports = await response.json();
+
+                if (reports.length === 0) {
+                    alert("No reports available to download.");
+                    return;
+                }
+
+                let csvContent = "Reference ID,Type,Date,Description,Status\n";
+                reports.forEach(r => {
+                    let cleanDesc = r.description.replace(/,/g, " ").replace(/\n/g, " "); 
+                    csvContent += `${r.id},${r.type},${r.timestamp},"${cleanDesc}",${r.status}\n`;
+                });
+
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement("a");
+                link.setAttribute("href", url);
+                link.setAttribute("download", "CIPHER_Reports_2026.csv");
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            } catch (error) {
+                alert("Could not fetch data for download.");
+            }
+        }
+
+        // 5. Panic Button Keyboard Shortcut (ESC Key)
+        document.addEventListener('keydown', (e) => {
+            if (e.key === "Escape") {
+                window.location.href = "https://google.com";
+            }
+        });
+    </script>
+</body>
+</html>
