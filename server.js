@@ -1,73 +1,117 @@
 const express = require('express');
-const fs = require('fs');
+const mysql = require('mysql2');
 const cors = require('cors');
+const session = require('express-session');
+require('dotenv').config(); // Allows using process.env for security
+
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
-// Enable CORS so your index.html and admin.html can talk to this server
+// --- 1. MIDDLEWARE ---
 app.use(cors());
-// Enable JSON parsing so the server can read the data you send
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-// Path to your "Database" file
-const DATA_FILE = './reports.json';
+// Session setup for Admin Login
+app.use(session({
+    secret: process.env.SESSION_SECRET || 'cipher_ultra_secret',
+    resave: false,
+    saveUninitialized: true,
+    cookie: { secure: false } // Set to true if using HTTPS on Render
+}));
+// This tells the server to serve your HTML/CSS/JS files from a folder named 'public'
+app.use(express.static(path.join(__dirname, 'AntiBulllyingSystem')));
 
-// Helper function to ensure reports.json exists and is valid
-const initializeDatabase = () => {
-    if (!fs.existsSync(DATA_FILE)) {
-        fs.writeFileSync(DATA_FILE, JSON.stringify([], null, 2));
+// This ensures that visiting the main URL loads your index.html
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'AntiBulllyingSystem', 'index.html'));
+});
+
+// --- 2. DATABASE CONNECTION (TiDB Cloud MySQL) ---
+// Note: Use your connection string from TiDB Cloud
+const connection = mysql.createConnection({
+    host: process.env.TIDB_HOST || 'gateway01.eu-central-1.prod.aws.tidbcloud.com',
+    user: process.env.TIDB_USER || 'idkpoF3Ar1v2D8F.root',
+    password: process.env.TIDB_PASSWORD, // Generated in TiDB dashboard
+    database: process.env.TIDB_DB_NAME || 'test',
+    port: 4000,
+    ssl: {
+        minVersion: 'TLSv1.2',
+        rejectUnauthorized: true
+    }
+});
+
+connection.connect((err) => {
+    if (err) return console.error("❌ Database Connection Failed:", err.message);
+    console.log("✅ Connected to TiDB Cloud (Permanent Storage)");
+});
+
+// --- 3. AUTHENTICATION MIDDLEWARE ---
+const checkAuth = (req, res, next) => {
+    if (req.session.isLoggedIn) {
+        next();
+    } else {
+        res.status(401).json({ error: "Unauthorized. Please log in." });
     }
 };
 
-// 1. ROUTE: Get all reports (Used by admin.html)
-app.get('/api/reports', (req, res) => {
-    try {
-        initializeDatabase();
-        const data = fs.readFileSync(DATA_FILE, 'utf8');
-        res.json(JSON.parse(data));
-    } catch (error) {
-        res.status(500).send({ message: "Error reading database" });
+// --- 4. API ROUTES ---
+
+// Login Logic for CPC Admins
+app.post('/api/login', (req, res) => {
+    const { username, password } = req.body;
+    const ADMIN_USER = "admin"; 
+    const ADMIN_PASS = process.env.ADMIN_PASS || "stc_tandag_2026";
+
+    if (username === ADMIN_USER && password === ADMIN_PASS) {
+        req.session.isLoggedIn = true;
+        res.json({ message: "Login successful" });
+    } else {
+        res.status(401).json({ error: "Invalid credentials" });
     }
 });
 
-// 2. ROUTE: Receive a new report (Used by index.html)
+// 1. GET: Fetch all reports (Protected by Login)
+app.get('/api/reports', checkAuth, (req, res) => {
+    const sql = "SELECT * FROM reports ORDER BY created_at DESC";
+    connection.query(sql, (err, results) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json(results);
+    });
+});
+
+// 2. POST: Submit a new report (Permanent Storage)
 app.post('/api/report', (req, res) => {
-    try {
-        initializeDatabase();
-        const data = fs.readFileSync(DATA_FILE, 'utf8');
-        const reports = JSON.parse(data);
-        
-        const newReport = req.body;
-        reports.push(newReport);
-        
-        fs.writeFileSync(DATA_FILE, JSON.stringify(reports, null, 2));
-        console.log(`New Report Received: ${newReport.id}`);
-        res.status(201).send({ message: "Report saved to server!" });
-    } catch (error) {
-        res.status(500).send({ message: "Error saving report" });
+    const { incident_type, incident_date, description } = req.body;
+
+    if (!incident_type || !description) {
+        return res.status(400).json({ error: "Incomplete report data" });
     }
+
+    const sql = "INSERT INTO reports (incident_type, incident_date, description) VALUES (?, ?, ?)";
+    connection.query(sql, [incident_type, incident_date, description], (err, result) => {
+        if (err) return res.status(500).json({ error: "Server failed to save report" });
+        console.log(`[SUBMISSION] New report saved permanently: {result.insertId}`);
+        res.status(201).json({ message: "Report successfully saved to Cloud!" });
+    });
 });
 
-// 3. ROUTE: Update Report Status (Optional - for Counselor actions)
-app.patch('/api/report/:id', (req, res) => {
-    try {
-        const data = fs.readFileSync(DATA_FILE, 'utf8');
-        let reports = JSON.parse(data);
-        const { id } = req.params;
-        const { status } = req.body;
+// 3. PATCH: Update Status
+app.patch('/api/report/:id', checkAuth, (req, res) => {
+    const { id } = req.params;
+    const { status } = req.body;
+    const sql = "UPDATE reports SET status = ? WHERE id = ?";
 
-        reports = reports.map(r => r.id === id ? { ...r, status: status } : r);
-        
-        fs.writeFileSync(DATA_FILE, JSON.stringify(reports, null, 2));
-        res.send({ message: "Status updated!" });
-    } catch (error) {
-        res.status(500).send({ message: "Error updating status" });
-    }
+    connection.query(sql, [status, id], (err, result) => {
+        if (err) return res.status(500).json({ error: "Failed to update status" });
+        res.json({ message: "Status updated successfully" });
+    });
 });
 
+// --- 5. START SERVER ---
 app.listen(PORT, () => {
-    console.log(`=================================`);
-    console.log(`CIPHER SERVER IS ACTIVE`);
-    console.log(`Running at http://localhost:${PORT}`);
-    console.log(`=================================`);
+    console.log(`=========================================`);
+    console.log(`🛡️  CIPHER SYSTEM BACKEND IS NOW ONLINE`);
+    console.log(`📍  API URL: https://cipher-1-gyw.onrender.com/api`);
+    console.log(`=========================================`);
 });
