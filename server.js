@@ -1,5 +1,5 @@
 const express = require('express');
-const mysql = require('mysql2/promise'); // Changed to promise version for better stability
+const mysql = require('mysql2/promise'); 
 const cors = require('cors');
 const session = require('express-session');
 const path = require('path');
@@ -14,7 +14,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.use(session({
-    secret: process.env.SESSION_SECRET || 'cipher_secret_777', // Matches your Render settings
+    secret: process.env.SESSION_SECRET || 'cipher_secret_777', 
     resave: false,
     saveUninitialized: true,
     cookie: { secure: false } 
@@ -27,29 +27,28 @@ app.get('/', (req, res) => {
 });
 
 // --- 2. DATABASE CONNECTION (REVISED) ---
-// Using a Pool is better for Render as it manages idle connections automatically
+
 const pool = mysql.createPool({
     host: process.env.TIDB_HOST,
     user: process.env.TIDB_USER,
     password: process.env.TIDB_PASSWORD, 
-    database: process.env.TIDB_DB_NAME || 'test', // Matches your Render Key
+    database: process.env.TIDB_DB_NAME || 'test', 
     port: 4000,
     ssl: {
-        rejectUnauthorized: false // FIXED: This prevents the "Access Denied" SSL handshake error
+        rejectUnauthorized: false
     },
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0
 });
 
-// Test connection on startup
 (async () => {
     try {
         const connection = await pool.getConnection();
         console.log("✅ Connected to TiDB Cloud (Permanent Storage)");
         connection.release();
     } catch (err) {
-        console.error("❌ Database Connection Failed:", err.message); // This will help debug if the password is still "Denying"
+        console.error("❌ Database Connection Failed:", err.message); 
     }
 })();
 
@@ -66,8 +65,7 @@ const checkAuth = (req, res, next) => {
 app.post('/api/login', (req, res) => {
     const { username, password } = req.body;
     const ADMIN_USER = "admin"; 
-    const ADMIN_PASS = process.env.ADMIN_PASS || "SHS2026"; // Matches your Render setting
-
+    const ADMIN_PASS = process.env.ADMIN_PASS || "SHS2026"; 
     if (username === ADMIN_USER && password === ADMIN_PASS) {
         req.session.isLoggedIn = true;
         res.json({ message: "Login successful" });
@@ -104,4 +102,8 @@ app.post('/api/report', async (req, res) => {
 app.listen(PORT, () => {
     console.log(`=========================================`);
     console.log(`🛡️  CIPHER SYSTEM BACKEND IS NOW ONLINE`);
-    console.log(`📍  API URL: https
+     console.log(`📍  API URL: https://cipher-1-gyw.onrender.com/api`);
+
+    console.log(`=========================================`);
+
+});
