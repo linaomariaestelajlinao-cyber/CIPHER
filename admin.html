@@ -36,10 +36,10 @@
     </div>
 
    <script>
+    const API_BASE = 'https://cipher-1-gyw.onrender.com/api';
     function checkLogin() {
         const pass = document.getElementById('adminPass').value;
-        // The password you set for your defense
-        if(pass === "SHS2026") { 
+        if(pass === "SHS2026") { // Your set password
             document.getElementById('loginOverlay').style.display = 'none';
             document.getElementById('dashboard').style.display = 'block';
             loadReports();
@@ -53,8 +53,7 @@
         list.innerHTML = "<p>Retrieving data from TiDB Cloud...</p>";
         
         try {
-            // FIXED URL: Removed the extra 'g' from 'ggyw'
-           const response = await fetch('https://cipher-1-gyw.onrender.com/api/reports'); 
+            const response = await fetch(`${API_BASE}/reports`); 
             const reports = await response.json();
 
             if(!reports || reports.length === 0) {
@@ -62,22 +61,50 @@
                 return;
             }
 
-            // Updated mapping to match your TiDB columns: incident_type, incident_date, created_at
-            list.innerHTML = reports.map(r => `
-                <div class="report-card">
-                    <strong>Ref ID: ${r.id}</strong> | <small>Logged: ${new Date(r.created_at).toLocaleString()}</small><br>
-                    <strong>Incident:</strong> ${r.incident_type.toUpperCase()}<br>
-                    <strong>Date of Occurrence:</strong> ${r.incident_date || 'Not specified'}<br>
+            // Using the exact column names from your DESCRIBE result
+            list.innerHTML = reports.map(r => {
+                const status = r.status || 'Pending';
+                const color = status === 'Resolved' ? '#28a745' : '#ffc107';
+                
+                return `
+                <div class="report-card" style="border-left: 5px solid ${color}">
+                    <div style="display:flex; justify-content:space-between;">
+                        <strong>Ref ID: ${r.reference_id || 'LEGACY'}</strong> 
+                        <span style="color:${color}; font-weight:bold;">${status.toUpperCase()}</span>
+                    </div>
+                    <small>Logged: ${new Date(r.created_at).toLocaleString()}</small><br>
+                    <strong>Incident:</strong> ${(r.incident_type || 'General').toUpperCase()}<br>
                     <p><strong>Details:</strong> ${r.description}</p>
-                </div>
-            `).reverse().join(''); 
+                    
+                    ${status === 'Pending' ? 
+                        `<button onclick="updateStatus('${r.reference_id}')" style="width:auto; padding:5px 10px; font-size:12px; margin-top:10px; background:#28a745;">Mark as Resolved</button>` 
+                        : ''}
+                </div>`;
+            }).reverse().join(''); 
 
         } catch (error) {
-            console.error("Fetch Error:", error);
-            list.innerHTML = "<p style='color:red;'>Error: Could not connect to the server database. Check Render Logs.</p>";
+            list.innerHTML = "<p style='color:red;'>Error: Could not connect to the server. Check Render Logs.</p>";
+        }
+    }
+
+    // New function to handle the Resolve button
+    async function updateStatus(refId) {
+        if(!refId || refId === 'null') return alert("Cannot resolve legacy reports without IDs.");
+        
+        try {
+            const res = await fetch(`${API_BASE}/report/status`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ reference_id: refId, status: 'Resolved' })
+            });
+            if (res.ok) {
+                alert("Report " + refId + " resolved!");
+                loadReports(); // Refresh the list
+            }
+        } catch (err) {
+            alert("Update failed.");
         }
     }
 </script>
 </body>
-
 </html>
