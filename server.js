@@ -64,6 +64,8 @@ const checkAuth = (req, res, next) => {
 };
 
 // --- 4. API ROUTES ---
+
+// 1. LOGIN ROUTE
 app.post('/api/login', (req, res) => {
     const { username, password } = req.body;
     const ADMIN_USER = "admin"; 
@@ -76,6 +78,7 @@ app.post('/api/login', (req, res) => {
     }
 });
 
+// 2. GET REPORTS (ADMIN PANEL)
 app.get('/api/reports', checkAuth, async (req, res) => {
     try {
         const [rows] = await pool.query("SELECT * FROM reports ORDER BY created_at DESC");
@@ -85,21 +88,28 @@ app.get('/api/reports', checkAuth, async (req, res) => {
     }
 });
 
+// 3. SUBMIT REPORT (MAIN FORM)
 app.post('/api/report', async (req, res) => {
-    const { incident_type, incident_date, description } = req.body;
-    if (!incident_type || !description) {
+    // UPDATED: Destructure to match your frontend keys (type, date, description)
+    const { type, date, description } = req.body; 
+
+    // Validation
+    if (!type || !description) {
         return res.status(400).json({ error: "Incomplete report data" });
     }
+
     try {
+        // Map the frontend 'type' to your database 'incident_type'
         const sql = "INSERT INTO reports (incident_type, incident_date, description) VALUES (?, ?, ?)";
-        await pool.query(sql, [incident_type, incident_date, description]);
+        await pool.query(sql, [type, date, description]);
+        
+        console.log("✅ Report saved to TiDB");
         res.status(201).json({ message: "Report successfully saved to Cloud!" });
     } catch (err) {
-        console.error("Save error:", err.message);
+        console.error("❌ SQL Save Error:", err.message);
         res.status(500).json({ error: "Server failed to save report" });
     }
 });
-
 // --- 5. START SERVER ---
 app.listen(PORT, () => {
     console.log(`=========================================`);
@@ -107,4 +117,5 @@ app.listen(PORT, () => {
     console.log(`📍  API URL: https://cipher-1-gyw.onrender.com/api`);
     console.log(`=========================================`);
 });
+
 
