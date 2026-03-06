@@ -1,219 +1,102 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>CIPHER | Anonymous Reporting System</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --primary: #0056b3;
-            --secondary: #20c997;
-            --danger: #dc3545;
-            --bg: #f8f9fa;
-            --text: #333;
-        }
-
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: var(--bg);
-            color: var(--text);
-            margin: 0;
-            line-height: 1.6;
-        }
-
-        nav {
-            background: white;
-            padding: 1rem 10%;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
-
-        .logo {
-            font-weight: 700;
-            color: var(--primary);
-            font-size: 1.2rem;
-        }
-
-        .panic-btn {
-            background: var(--danger);
-            color: white;
-            padding: 8px 15px;
-            border-radius: 5px;
-            text-decoration: none;
-            font-size: 0.8rem;
-            font-weight: bold;
-        }
-
-        .hero {
-            background: linear-gradient(135deg, var(--primary), #003366);
-            color: white;
-            padding: 60px 10%;
-            text-align: center;
-        }
-
-        .container {
-            max-width: 800px;
-            margin: -40px auto 40px;
-            background: white;
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 600;
-        }
-
-        input, select, textarea {
-            width: 100%;
-            padding: 12px;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            box-sizing: border-box;
-        }
-
-        textarea {
-            height: 120px;
-            resize: vertical;
-        }
-
-        .btn-submit {
-            background: var(--primary);
-            color: white;
-            border: none;
-            padding: 15px;
-            width: 100%;
-            border-radius: 6px;
-            font-size: 1rem;
-            font-weight: 700;
-            cursor: pointer;
-            transition: 0.3s;
-        }
-
-        .btn-submit:hover { background: #004494; }
-        .btn-submit:disabled { background: #ccc; cursor: not-allowed; }
-
-        .status-check {
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 1px dashed #ccc;
-            text-align: center;
-        }
-
-        .counselor-preview {
-            display: none;
-            margin-top: 40px;
-            background: #e9ecef;
-            padding: 20px;
-            border-radius: 8px;
-        }
-
-        .success-msg {
-            display: none;
-            background: #d4edda;
-            color: #155724;
-            padding: 20px;
-            border-radius: 6px;
-            text-align: center;
-        }
-
-        .id-badge {
-            font-family: monospace;
-            background: #eee;
-            padding: 5px 10px;
-            border-radius: 4px;
-            font-size: 1.2rem;
-            display: block;
-            margin: 10px 0;
-        }
-    </style>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CIPHER | Anonymous Reporting System</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --primary: #0056b3; --secondary: #20c997; --danger: #dc3545; --bg: #f8f9fa; --text: #333; }
+        body { font-family: 'Inter', sans-serif; background-color: var(--bg); color: var(--text); margin: 0; line-height: 1.6; }
+        nav { background: white; padding: 1rem 10%; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 100; }
+        .logo { font-weight: 700; color: var(--primary); font-size: 1.2rem; }
+        .panic-btn { background: var(--danger); color: white; padding: 8px 15px; border-radius: 5px; text-decoration: none; font-size: 0.8rem; font-weight: bold; }
+        .hero { background: linear-gradient(135deg, var(--primary), #003366); color: white; padding: 60px 10%; text-align: center; }
+        .container { max-width: 800px; margin: -40px auto 40px; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1); }
+        .form-group { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 8px; font-weight: 600; }
+        input, select, textarea { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
+        textarea { height: 120px; resize: vertical; }
+        .btn-submit { background: var(--primary); color: white; border: none; padding: 15px; width: 100%; border-radius: 6px; font-size: 1rem; font-weight: 700; cursor: pointer; transition: 0.3s; }
+        .btn-submit:hover { background: #004494; }
+        .btn-submit:disabled { background: #ccc; cursor: not-allowed; }
+        .status-check { margin-top: 30px; padding-top: 20px; border-top: 1px dashed #ccc; text-align: center; }
+        .success-msg { display: none; background: #d4edda; color: #155724; padding: 20px; border-radius: 6px; text-align: center; }
+        .id-badge { font-family: monospace; background: #eee; padding: 5px 10px; border-radius: 4px; font-size: 1.2rem; display: block; margin: 10px 0; }
+        #counselorView { display: none; margin-top: 20px; background: #f1f3f5; padding: 20px; border-radius: 8px; text-align: left; }
+        .report-card { background: white; padding: 15px; border-left: 5px solid var(--primary); margin-bottom: 10px; border-radius: 4px; }
+    </style>
 </head>
 <body>
 
-    <nav>
-        <div class="logo">🛡️ CIPHER SYSTEM</div>
-        <a id="panicLink" href="https://google.com" class="panic-btn">EXIT (ESC)</a>
-    </nav>
+    <nav>
+        <div class="logo">🛡️ CIPHER SYSTEM</div>
+        <a id="panicLink" href="https://google.com" class="panic-btn">EXIT (ESC)</a>
+    </nav>
 
-    <header class="hero">
-        <h1>Anonymous Reporting System</h1>
-        <p>Speak up without standing up.</p>
-    </header>
+    <header class="hero">
+        <h1>Anonymous Reporting System</h1>
+        <p>Speak up without standing up.</p>
+    </header>
 
-    <div class="container">
-        <div id="reportFormArea">
-            <div class="form-group">
-                <label>Type of Incident</label>
-                <select id="incidentType">
-                    <option value="cyber">Cyberbullying</option>
-                    <option value="physical">Physical Bullying</option>
-                    <option value="verbal">Verbal/Emotional</option>
-                    <option value="social">Social Exclusion</option>
-                </select>
-            </div>
+    <div class="container">
+        <div id="reportFormArea">
+            <div class="form-group">
+                <label>Type of Incident</label>
+                <select id="incidentType">
+                    <option value="cyber">Cyberbullying</option>
+                    <option value="physical">Physical Bullying</option>
+                    <option value="verbal">Verbal/Emotional</option>
+                    <option value="social">Social Exclusion</option>
+                </select>
+            </div>
 
-            <div class="form-group">
-                <label>Date & Time (Approximate)</label>
-                <input type="datetime-local" id="incidentDate">
-            </div>
+            <div class="form-group">
+                <label>Date & Time (Approximate)</label>
+                <input type="datetime-local" id="incidentDate">
+            </div>
 
-            <div class="form-group">
-                <label>Description</label>
-                <textarea id="description" placeholder="Describe what happened. Remaining anonymous is your choice."></textarea>
-            </div>
+            <div class="form-group">
+                <label>Description</label>
+                <textarea id="description" placeholder="Describe what happened. Remaining anonymous is your choice."></textarea>
+            </div>
 
-            <button id="submitBtn" class="btn-submit" onclick="handleSubmission()">Submit Anonymous Report</button>
-        </div>
+            <button id="submitBtn" class="btn-submit" onclick="handleSubmission()">Submit Anonymous Report</button>
+        </div>
 
-        <div id="successArea" class="success-msg">
-            <h2>Report Submitted Securely</h2>
-            <p>Write down this Reference ID to check status later:</p>
-            <span id="referenceID" class="id-badge"></span>
-            <button onclick="location.reload()" style="background:none; border:1px solid #155724; cursor:pointer; padding: 5px 10px; border-radius: 4px; margin-top: 10px;">New Report</button>
-        </div>
+        <div id="successArea" class="success-msg">
+            <h2>Report Submitted Securely</h2>
+            <p>Write down this Reference ID to check status later:</p>
+            <span id="referenceID" class="id-badge"></span>
+            <button onclick="location.reload()" style="background:none; border:1px solid #155724; cursor:pointer; padding: 5px 10px; border-radius: 4px; margin-top: 10px;">New Report</button>
+        </div>
 
-        <div class="status-check">
-            <p>Admin Access: <a href="#" onclick="toggleCounselor(); return false;">View Dashboard</a></p>
-        </div>
+        <div class="status-check">
+            <p>Admin Access: <a href="#" onclick="toggleCounselor(); return false;">View Dashboard</a></p>
+        </div>
+
+        <div id="counselorView">
+            <h3>Counselor Dashboard</h3>
+            <div id="reportList">Loading reports...</div>
+        </div>
+    </div>
+
 <script>
-    const API_URL = "/api";
+    const API_URL = "/api"; 
     const PANIC_URL = document.getElementById('panicLink').href;
 
-    // 2. Escape Key functionality
+    // Panic Exit
     window.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') window.location.href = PANIC_URL;
     });
 
-    // 3. Single instance of the toggle function
-    function toggleCounselor() {
-        const view = document.getElementById('counselorView');
-        if (!view) return; // Prevent error if the div is missing
-        const isHidden = getComputedStyle(view).display === 'none';
-        view.style.display = isHidden ? 'block' : 'none';
-        if (isHidden) updateAdminDashboard();
-    }
-
-    // 4. Submission function matching your TiDB columns
     async function handleSubmission() {
         const type = document.getElementById('incidentType').value;
         const date = document.getElementById('incidentDate').value;
-        const descEl = document.getElementById('description');
-        const desc = (descEl.value || "").trim();
+        const desc = document.getElementById('description').value;
         const btn = document.getElementById('submitBtn');
 
-        if (!desc) { alert("Please provide details."); descEl.focus(); return; }
+        if (!desc.trim()) { alert("Please provide details."); return; }
 
         btn.disabled = true;
         btn.innerText = "Sending...";
@@ -223,54 +106,50 @@
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    incident_type: type, 
-                    incident_date: date, 
+                    type: type, 
+                    date: date, 
                     description: desc 
                 })
             });
 
             if (response.ok) {
+                // Generate a random Reference ID for the user
+                const refId = "SHS-" + Math.random().toString(36).substr(2, 6).toUpperCase();
+                document.getElementById('referenceID').innerText = refId;
+                
                 document.getElementById('reportFormArea').style.display = 'none';
                 document.getElementById('successArea').style.display = 'block';
             } else {
-                throw new Error("Server Error");
+                alert("Server Error. Check Render Logs.");
             }
         } catch (error) {
-            alert("Connection Failed. Check if Render is active.");
+            alert("Connection Failed. The server might be waking up—please try again.");
+        } finally {
             btn.disabled = false;
+            btn.innerText = "Submit Anonymous Report";
         }
     }
 
-    // 5. Dashboard loading function
-    async function updateAdminDashboard() {
+    async function toggleCounselor() {
+        const view = document.getElementById('counselorView');
         const list = document.getElementById('reportList');
-        if (!list) return;
-        try {
-            const response = await fetch(`${API_URL}/reports`);
-            const reports = await response.json();
-            list.innerHTML = reports.length ? "" : "<p>No records found.</p>";
-            
-            reports.forEach(r => {
-                const div = document.createElement('div');
-                div.className = "report-card";
-                div.innerHTML = `<strong>${r.incident_type}</strong><br><small>${r.description}</small>`;
-                list.appendChild(div);
-            });
-        } catch (err) {
-            list.innerHTML = "<p style='color:red;'>Offline: Could not reach server.</p>";
+        
+        const isHidden = view.style.display === 'none' || view.style.display === '';
+        view.style.display = isHidden ? 'block' : 'none';
+
+        if (isHidden) {
+            try {
+                const res = await fetch(`${API_URL}/reports`);
+                const reports = await res.json();
+                list.innerHTML = reports.length ? "" : "No records found.";
+                reports.forEach(r => {
+                    list.innerHTML += `<div class="report-card"><strong>${r.type}</strong><br><small>${r.description}</small></div>`;
+                });
+            } catch (err) {
+                list.innerHTML = "Offline: Could not fetch reports.";
+            }
         }
     }
 </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
