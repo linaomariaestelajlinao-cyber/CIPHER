@@ -187,124 +187,83 @@
         <div class="status-check">
             <p>Admin Access: <a href="#" onclick="toggleCounselor(); return false;">View Dashboard</a></p>
         </div>
- <script>
-    const API_URL = "/api";
-    const PANIC_URL = document.getElementById('panicLink').href;
+<script>
+    const API_URL = "/api";
+    const PANIC_URL = document.getElementById('panicLink').href;
 
-    // Panic Exit
-    window.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') window.location.href = PANIC_URL;
-    });
+    // 2. Escape Key functionality
+    window.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') window.location.href = PANIC_URL;
+    });
 
-    async function handleSubmission() {
-        const type = document.getElementById('incidentType').value;
-        const date = document.getElementById('incidentDate').value;
-        const descEl = document.getElementById('description');
-        const desc = (descEl.value || "").trim();
-        const btn = document.getElementById('submitBtn');
+    // 3. Single instance of the toggle function
+    function toggleCounselor() {
+        const view = document.getElementById('counselorView');
+        if (!view) return; // Prevent error if the div is missing
+        const isHidden = getComputedStyle(view).display === 'none';
+        view.style.display = isHidden ? 'block' : 'none';
+        if (isHidden) updateAdminDashboard();
+    }
 
-        if (!desc) { alert("Please provide details."); descEl.focus(); return; }
+    // 4. Submission function matching your TiDB columns
+    async function handleSubmission() {
+        const type = document.getElementById('incidentType').value;
+        const date = document.getElementById('incidentDate').value;
+        const descEl = document.getElementById('description');
+        const desc = (descEl.value || "").trim();
+        const btn = document.getElementById('submitBtn');
 
-        btn.disabled = true;
-        btn.innerText = "Encrypting & Sending...";
+        if (!desc) { alert("Please provide details."); descEl.focus(); return; }
 
-        const refID = "SHS-" + Math.random().toString(36).substr(2, 6).toUpperCase();
+        btn.disabled = true;
+        btn.innerText = "Sending...";
 
-        const newReport = {
-            type: type, // Matches backend 'type'
-            date: date, // Matches backend 'date'
-            description: desc // Matches backend 'description'
-        };
+        try {
+            const response = await fetch(`${API_URL}/report`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    incident_type: type, 
+                    incident_date: date, 
+                    description: desc 
+                })
+            });
 
-        try {
-           const response = await fetch(`${API_URL}/report`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(newReport)
-            });
+            if (response.ok) {
+                document.getElementById('reportFormArea').style.display = 'none';
+                document.getElementById('successArea').style.display = 'block';
+            } else {
+                throw new Error("Server Error");
+            }
+        } catch (error) {
+            alert("Connection Failed. Check if Render is active.");
+            btn.disabled = false;
+        }
+    }
 
-            if (response.ok) {
-                document.getElementById('reportFormArea').style.display = 'none';
-                document.getElementById('successArea').style.display = 'block';
-                document.getElementById('referenceID').innerText = refID;
-            } else {
-                throw new Error("Server error");
-            }
-        } catch (error) {
-            alert("Submission Failed! Ensure the server is live on Render.");
-            btn.disabled = false;
-            btn.innerText = "Submit Anonymous Report";
-        }
-    }
-
-    function toggleCounselor() {
-        const view = document.getElementById('counselorView');
-        const isHidden = getComputedStyle(view).display === 'none';
-        view.style.display = isHidden ? 'block' : 'none';
-        if (isHidden) updateAdminDashboard();
-    }
-
-    async function updateAdminDashboard() {
-        const list = document.getElementById('reportList');
-        if (!list) return;
-        
-        try {
-            const response = await fetch(`${API_URL}/reports`);
-            
-            if (response.status === 401) {
-                list.innerHTML = "<p style='color:red;'>⚠️ Access Denied. Please login first.</p>";
-                return;
-            }
-
-            const reports = await response.json();
-            list.innerHTML = ""; // Clear "Loading..."
-
-            if (!reports || reports.length === 0) {
-                list.innerHTML = "<p>No records found.</p>";
-                return;
-            }
-
-            // Loop to display the data for your showcase
-            reports.forEach(r => {
-                const div = document.createElement('div');
-                div.style.padding = "10px";
-                div.style.borderBottom = "1px solid #ddd";
-                div.innerHTML = `
-                    <strong>${r.incident_type}</strong> (${new Date(r.incident_date).toLocaleDateString()})<br>
-                    <small>${r.description}</small>
-                `;
-                list.appendChild(div);
-            });
-        } catch (err) { 
-            console.error(err);
-            list.innerHTML = "<p style='color:red;'>Error fetching reports.</p>";
-        }
-    }
-        function toggleCounselor() {
-            const view = document.getElementById('counselorView');
-            const isHidden = getComputedStyle(view).display === 'none';
-            view.style.display = isHidden ? 'block' : 'none';
-            if (isHidden) updateAdminDashboard();
-        }
-
-       async function updateAdminDashboard() {
-        const list = document.getElementById('reportList');
-        if (!list) return; // Prevent error if element doesn't exist
-        
-        try {
-            const response = await fetch(`${API_URL}/reports`);
-            const reports = await response.json();
-
-            if (!reports || !reports.length) {
-                list.innerHTML = "<p>No records found.</p>";
-                return;
-            }
-            // ... logic to display reports
-        } catch (err) { console.error(err); }
-    }
+    // 5. Dashboard loading function
+    async function updateAdminDashboard() {
+        const list = document.getElementById('reportList');
+        if (!list) return;
+        try {
+            const response = await fetch(`${API_URL}/reports`);
+            const reports = await response.json();
+            list.innerHTML = reports.length ? "" : "<p>No records found.</p>";
+            
+            reports.forEach(r => {
+                const div = document.createElement('div');
+                div.className = "report-card";
+                div.innerHTML = `<strong>${r.incident_type}</strong><br><small>${r.description}</small>`;
+                list.appendChild(div);
+            });
+        } catch (err) {
+            list.innerHTML = "<p style='color:red;'>Offline: Could not reach server.</p>";
+        }
+    }
 </script>
 </body>
 </html>
+
 
 
 
