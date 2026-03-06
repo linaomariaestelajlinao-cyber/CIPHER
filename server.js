@@ -31,19 +31,17 @@ app.get('/', (req, res) => {
 const pool = mysql.createPool({
     host: process.env.TIDB_HOST,
     user: process.env.TIDB_USER,
-    password: process.env.TIDB_PASSWORD, 
-    // FIX 1: Changed TIDB_DB_NAME to TIDB_DATABASE to match your Render variables
-    database: process.env.TIDB_DATABASE || 'test', 
+    password: process.env.TIDB_PASSWORD,
+    database: process.env.TIDB_DATABASE || 'test',
     port: 4000,
     ssl: {
-        // FIX 2: This is the critical line to bypass the certificate rejection
         rejectUnauthorized: false
     },
+    connectTimeout: 20000,
+    acquireTimeout: 20000,
     waitForConnections: true,
-    connectionLimit: 10,
-    queueLimit: 0,
-    // FIX 3: Added a connectTimeout to prevent the "Submission Failed" hang on slow networks
-    connectTimeout: 10000 
+    connectionLimit: 1, 
+    queueLimit: 0
 });
 
 (async () => {
@@ -52,7 +50,6 @@ const pool = mysql.createPool({
         console.log("✅ Connected to TiDB Cloud (Permanent Storage)");
         connection.release();
     } catch (err) {
-        // This will now show the EXACT reason for failure in your Render logs
         console.error("❌ Database Connection Failed:", err.message); 
     }
 })();
@@ -110,3 +107,4 @@ app.listen(PORT, () => {
     console.log(`📍  API URL: https://cipher-1-gyw.onrender.com/api`);
     console.log(`=========================================`);
 });
+
