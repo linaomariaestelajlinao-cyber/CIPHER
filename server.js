@@ -70,18 +70,32 @@ const checkAuth = (req, res, next) => {
 // --- 4. API ROUTES ---
 
 // 1. LOGIN ROUTE
-app.post('/api/login', (req, res) => {
-    const { username, password } = req.body;
-    const ADMIN_USER = "admin"; 
-    const ADMIN_PASS = process.env.ADMIN_PASS || "SHS2026"; 
-    if (username === ADMIN_USER && password === ADMIN_PASS) {
-        req.session.isLoggedIn = true;
-        res.json({ message: "Login successful" });
-    } else {
-        res.status(401).json({ error: "Invalid credentials" });
+app.post('/api/report', async (req, res) => {
+    const { incident_type, incident_date, description, reference_id, status } = req.body;
+    
+    try {
+        const [result] = await pool.query(
+            'INSERT INTO reports (incident_type, incident_date, description, reference_id, status) VALUES (?, ?, ?, ?, ?)',
+            [incident_type, incident_date, description, reference_id, status || 'Pending']
+        );
+        res.status(200).json({ success: true, id: result.insertId });
+    } catch (err) {
+        console.error('Database Insert Error:', err);
+        res.status(500).json({ error: 'Failed to save report' });
     }
 });
-
+app.put('/api/report/status', async (req, res) => {
+    const { reference_id, status } = req.body;
+    try {
+        await pool.query(
+            'UPDATE reports SET status = ? WHERE reference_id = ?',
+            [status, reference_id]
+        );
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: 'Update failed' });
+    }
+});
 // 2. GET REPORTS (ADMIN PANEL)
 app.get('/api/reports', async (req, res) => {
     try {
