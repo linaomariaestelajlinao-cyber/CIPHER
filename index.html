@@ -165,10 +165,7 @@ async function updateAdminDashboard() {
                     </div>
                     <p><strong>Type:</strong> ${type}</p>
                     <p>${r.description}</p>
-                    ${status === 'Pending' ? 
-    `<button onclick="updateStatus('${ref}')" style="cursor:pointer; padding:5px; font-size:10px;">Resolve</button>` : 
-    '' 
-}
+                    ${ '' }
                 </div>`;
         });
     } catch (err) {
@@ -191,5 +188,6 @@ async function updateStatus(refId) {
 </script>
 </body>
 </html>
+
 
 
