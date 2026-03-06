@@ -166,8 +166,9 @@ async function updateAdminDashboard() {
                     <p><strong>Type:</strong> ${type}</p>
                     <p>${r.description}</p>
                     ${status === 'Pending' ? 
-                        `<button onclick="updateStatus('${ref}')" style="cursor:pointer; padding:5px; font-size:10px;">Resolve</button>` 
-                        : ''}
+    `<button onclick="updateStatus('${ref}')" style="cursor:pointer; padding:5px; font-size:10px;">Resolve</button>` : 
+    '' 
+}
                 </div>`;
         });
     } catch (err) {
@@ -176,19 +177,19 @@ async function updateAdminDashboard() {
 }
 
 async function updateStatus(refId) {
-    if (!confirm("Mark report " + refId + " as resolved?")) return;
-    try {
-        const res = await fetch(`${API_URL}/report/status`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ reference_id: refId, status: 'Resolved' })
-        });
-        if (res.ok) updateAdminDashboard();
-    } catch (err) {
-        alert("Update failed.");
+    const res = await fetch(`${API_URL}/report/status`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reference_id: refId, status: 'Resolved' })
+    });
+    
+    if (res.ok) {
+        // This line refreshes the list so the button vanishes immediately!
+        loadReports(); 
     }
 }
 </script>
 </body>
 </html>
+
 
