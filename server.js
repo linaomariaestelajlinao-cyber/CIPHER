@@ -9,7 +9,11 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // --- 1. MIDDLEWARE ---
-app.use(cors());
+app.use(cors({
+    origin: '*', // Allows any website/file to talk to your backend
+    methods: ['GET', 'POST'],
+    credentials: true
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -79,7 +83,7 @@ app.post('/api/login', (req, res) => {
 });
 
 // 2. GET REPORTS (ADMIN PANEL)
-app.get('/api/reports', checkAuth, async (req, res) => {
+app.get('/api/reports', async (req, res) => {
     try {
         const [rows] = await pool.query("SELECT * FROM reports ORDER BY created_at DESC");
         res.json(rows);
@@ -117,5 +121,6 @@ app.listen(PORT, () => {
     console.log(`📍  API URL: https://cipher-1-gyw.onrender.com/api`);
     console.log(`=========================================`);
 });
+
 
 
