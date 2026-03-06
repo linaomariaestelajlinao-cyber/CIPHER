@@ -188,70 +188,100 @@
             <p>Admin Access: <a href="#" onclick="toggleCounselor(); return false;">View Dashboard</a></p>
         </div>
 
-        <div id="counselorView" class="counselor-preview">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                <h3 style="margin:0;">Counselor Dashboard</h3>
-                <button onclick="downloadCSV()" style="background: var(--secondary); color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer;">📥 Download CSV</button>
-            </div>
-            <div id="reportList">
-                <p>Loading reports...</p>
-            </div>
-        </div>
-    </div>
+        <script>
+    const API_URL = "/api";
+    const PANIC_URL = document.getElementById('panicLink').href;
 
-    <script>
-        const API_URL = "/api";
-        const PANIC_URL = document.getElementById('panicLink').href;
+    // Panic Exit
+    window.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') window.location.href = PANIC_URL;
+    });
 
-        // Panic Exit
-        window.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') window.location.href = PANIC_URL;
-        });
+    async function handleSubmission() {
+        const type = document.getElementById('incidentType').value;
+        const date = document.getElementById('incidentDate').value;
+        const descEl = document.getElementById('description');
+        const desc = (descEl.value || "").trim();
+        const btn = document.getElementById('submitBtn');
 
-        async function handleSubmission() {
-            const type = document.getElementById('incidentType').value;
-            const date = document.getElementById('incidentDate').value;
-            const descEl = document.getElementById('description');
-            const desc = (descEl.value || "").trim();
-            const btn = document.getElementById('submitBtn');
+        if (!desc) { alert("Please provide details."); descEl.focus(); return; }
 
-            if (!desc) { alert("Please provide details."); descEl.focus(); return; }
+        btn.disabled = true;
+        btn.innerText = "Encrypting & Sending...";
 
-            btn.disabled = true;
-            btn.innerText = "Encrypting & Sending...";
+        const refID = "SHS-" + Math.random().toString(36).substr(2, 6).toUpperCase();
 
-            const refID = "SHS-" + Math.random().toString(36).substr(2, 6).toUpperCase();
+        const newReport = {
+            type: type, // Matches backend 'type'
+            date: date, // Matches backend 'date'
+            description: desc // Matches backend 'description'
+        };
 
-            const newReport = {
-                id: refID,
-                type: type,
-                date: date,
-                description: desc,
-                timestamp: new Date().toLocaleString(),
-                status: "Pending"
-            };
+        try {
+           const response = await fetch(`${API_URL}/report`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(newReport)
+            });
 
-            try {
-               const response = await fetch('/api/report', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(newReport)
-                });
-
-                if (response.ok) {
-                    document.getElementById('reportFormArea').style.display = 'none';
-                    document.getElementById('successArea').style.display = 'block';
-                    document.getElementById('referenceID').innerText = refID;
-                } else {
-                    throw new Error("Server error");
-                }
-            } catch (error) {
-                alert("Submission Failed! Ensure the server is live on Render.");
-                btn.disabled = false;
-                btn.innerText = "Submit Anonymous Report";
+            if (response.ok) {
+                document.getElementById('reportFormArea').style.display = 'none';
+                document.getElementById('successArea').style.display = 'block';
+                document.getElementById('referenceID').innerText = refID;
+            } else {
+                throw new Error("Server error");
             }
+        } catch (error) {
+            alert("Submission Failed! Ensure the server is live on Render.");
+            btn.disabled = false;
+            btn.innerText = "Submit Anonymous Report";
         }
+    }
 
+    function toggleCounselor() {
+        const view = document.getElementById('counselorView');
+        const isHidden = getComputedStyle(view).display === 'none';
+        view.style.display = isHidden ? 'block' : 'none';
+        if (isHidden) updateAdminDashboard();
+    }
+
+    async function updateAdminDashboard() {
+        const list = document.getElementById('reportList');
+        if (!list) return;
+        
+        try {
+            const response = await fetch(`${API_URL}/reports`);
+            
+            if (response.status === 401) {
+                list.innerHTML = "<p style='color:red;'>⚠️ Access Denied. Please login first.</p>";
+                return;
+            }
+
+            const reports = await response.json();
+            list.innerHTML = ""; // Clear "Loading..."
+
+            if (!reports || reports.length === 0) {
+                list.innerHTML = "<p>No records found.</p>";
+                return;
+            }
+
+            // Loop to display the data for your showcase
+            reports.forEach(r => {
+                const div = document.createElement('div');
+                div.style.padding = "10px";
+                div.style.borderBottom = "1px solid #ddd";
+                div.innerHTML = `
+                    <strong>${r.incident_type}</strong> (${new Date(r.incident_date).toLocaleDateString()})<br>
+                    <small>${r.description}</small>
+                `;
+                list.appendChild(div);
+            });
+        } catch (err) { 
+            console.error(err);
+            list.innerHTML = "<p style='color:red;'>Error fetching reports.</p>";
+        }
+    }
+</script>
         function toggleCounselor() {
             const view = document.getElementById('counselorView');
             const isHidden = getComputedStyle(view).display === 'none';
@@ -260,63 +290,24 @@
         }
 
        async function updateAdminDashboard() {
-    const list = document.getElementById('reportList');
-    try {
-        // Ensure API_URL is "/api" to match your Render backend
-        const response = await fetch(`${API_URL}/reports`);
+        const list = document.getElementById('reportList');
+        if (!list) return; // Prevent error if element doesn't exist
+        
+        try {
+            const response = await fetch(`${API_URL}/reports`);
+            const reports = await response.json();
 
-        if (response.status === 401) {
-            list.innerHTML = "<p style='color:red;'>⚠️ Access Denied. Please login first.</p>";
-            return;
-        }
-
-        const reports = await response.json();
-        list.innerHTML = ""; // Clear the "Loading..." or "No records" text first
-
-        if (!reports || reports.length === 0) {
-            list.innerHTML = "<p>No records found in the database.</p>";
-            return;
-        }
-
-        // Add code here to loop through reports and display them
-        reports.forEach(report => {
-            const item = document.createElement('div');
-            item.className = "report-item";
-            item.innerHTML = `<strong>${report.incident_type}</strong> - ${report.description}`;
-            list.appendChild(item);
-        });
-
-    } catch (error) {
-        console.error("Dashboard error:", error);
-        list.innerHTML = "<p style='color:red;'>Offline: Check Render Logs.</p>";
-    }
-}
-                list.innerHTML = reports.slice().reverse().map(r => `
-                    <div style="background:white; padding:15px; margin-bottom:10px; border-radius:4px; border-left:4px solid var(--primary);">
-                        <strong>ID: ${escapeHtml(r.id)}</strong><br>
-                        <small>${escapeHtml(r.timestamp)}</small><br>
-                        <strong>Type:</strong> ${escapeHtml(r.type).toUpperCase()}<br>
-                        <p>${escapeHtml(r.description)}</p>
-                    </div>
-                `).join('');
-            } catch (e) {
-                list.innerHTML = "<p style='color:red'>Offline: Check Render Logs.</p>";
+            if (!reports || !reports.length) {
+                list.innerHTML = "<p>No records found.</p>";
+                return;
             }
-        }
-
-        function escapeHtml(str) {
-            const div = document.createElement('div');
-            div.textContent = str;
-            return div.innerHTML;
-        }
-
-        async function downloadCSV() {
-            // Placeholder: Function logic remains same as your original
-            alert("Generating CSV from live data...");
-        }
-    </script>
+            // ... logic to display reports
+        } catch (err) { console.error(err); }
+    }
+</script>
 </body>
 </html>
+
 
 
 
