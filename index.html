@@ -82,74 +82,113 @@
     </div>
 
 <script>
-    const API_URL = "/api"; 
-    const PANIC_URL = document.getElementById('panicLink').href;
+   const API_URL = "/api"; 
+const PANIC_URL = document.getElementById('panicLink').href;
 
-    // Panic Exit
-    window.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') window.location.href = PANIC_URL;
-    });
+// Panic Exit Logic
+window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') window.location.href = PANIC_URL;
+});
 
-    async function handleSubmission() {
-        const type = document.getElementById('incidentType').value;
-        const date = document.getElementById('incidentDate').value;
-        const desc = document.getElementById('description').value;
-        const btn = document.getElementById('submitBtn');
+async function handleSubmission() {
+    const type = document.getElementById('incidentType').value;
+    const date = document.getElementById('incidentDate').value;
+    const desc = document.getElementById('description').value;
+    const btn = document.getElementById('submitBtn');
 
-        if (!desc.trim()) { alert("Please provide details."); return; }
+    if (!desc.trim()) { alert("Please provide details."); return; }
 
-        btn.disabled = true;
-        btn.innerText = "Sending...";
+    // Generate Reference ID to match your new DB column
+    const refId = "SHS-" + Math.random().toString(36).substr(2, 6).toUpperCase();
 
-        try {
-            const response = await fetch(`${API_URL}/report`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    type: type, 
-                    date: date, 
-                    description: desc 
-                })
-            });
+    btn.disabled = true;
+    btn.innerText = "Sending...";
 
-            if (response.ok) {
-                // Generate a random Reference ID for the user
-                const refId = "SHS-" + Math.random().toString(36).substr(2, 6).toUpperCase();
-                document.getElementById('referenceID').innerText = refId;
-                
-                document.getElementById('reportFormArea').style.display = 'none';
-                document.getElementById('successArea').style.display = 'block';
-            } else {
-                alert("Server Error. Check Render Logs.");
-            }
-        } catch (error) {
-            alert("Connection Failed. The server might be waking up—please try again.");
-        } finally {
-            btn.disabled = false;
-            btn.innerText = "Submit Anonymous Report";
+    try {
+        const response = await fetch(`${API_URL}/report`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                incident_type: type, // Matches your DB column
+                incident_date: date, // Matches your DB column
+                description: desc,
+                reference_id: refId,
+                status: 'Pending'
+            })
+        });
+
+        if (response.ok) {
+            document.getElementById('referenceID').innerText = refId;
+            document.getElementById('reportFormArea').style.display = 'none';
+            document.getElementById('successArea').style.display = 'block';
         }
+    } catch (error) {
+        alert("Connection Failed. Check your internet.");
+    } finally {
+        btn.disabled = false;
+        btn.innerText = "Submit Anonymous Report";
     }
+}
 
-    async function toggleCounselor() {
-        const view = document.getElementById('counselorView');
-        const list = document.getElementById('reportList');
+function toggleCounselor() {
+    const view = document.getElementById('counselorView');
+    const isHidden = view.style.display === 'none' || view.style.display === '';
+    view.style.display = isHidden ? 'block' : 'none';
+    
+    if (isHidden) {
+        updateAdminDashboard(); // Call the missing function here
+    }
+}
+
+async function updateAdminDashboard() {
+    const list = document.getElementById('reportList');
+    if (!list) return;
+
+    try {
+        const response = await fetch(`${API_URL}/reports`);
+        const reports = await response.json();
+
+        list.innerHTML = reports.length ? "" : "No records found.";
         
-        const isHidden = view.style.display === 'none' || view.style.display === '';
-        view.style.display = isHidden ? 'block' : 'none';
+        reports.forEach(r => {
+            // Using the exact column names from your DESCRIBE result
+            const ref = r.reference_id || "LEGACY";
+            const type = r.incident_type || "General";
+            const status = r.status || "Pending";
+            const color = status === 'Resolved' ? '#20c997' : '#ffc107';
 
-        if (isHidden) {
-            try {
-                const res = await fetch(`${API_URL}/reports`);
-                const reports = await res.json();
-                list.innerHTML = reports.length ? "" : "No records found.";
-                reports.forEach(r => {
-                    list.innerHTML += `<div class="report-card"><strong>${r.type}</strong><br><small>${r.description}</small></div>`;
-                });
-            } catch (err) {
-                list.innerHTML = "Offline: Could not fetch reports.";
-            }
-        }
+            list.innerHTML += `
+                <div class="report-card" style="border-left: 5px solid ${color}; background:#fff; padding:15px; margin-bottom:10px; border-radius:8px;">
+                    <div style="display:flex; justify-content:space-between;">
+                        <strong>ID: ${ref}</strong>
+                        <span style="color:${color}; font-weight:bold;">${status}</span>
+                    </div>
+                    <p><strong>Type:</strong> ${type}</p>
+                    <p>${r.description}</p>
+                    ${status === 'Pending' ? 
+                        `<button onclick="updateStatus('${ref}')" style="cursor:pointer; padding:5px; font-size:10px;">Resolve</button>` 
+                        : ''}
+                </div>`;
+        });
+    } catch (err) {
+        list.innerHTML = "Error loading reports.";
     }
+}
+
+async function updateStatus(refId) {
+    if (!confirm("Mark report " + refId + " as resolved?")) return;
+    try {
+        const res = await fetch(`${API_URL}/report/status`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ reference_id: refId, status: 'Resolved' })
+        });
+        if (res.ok) updateAdminDashboard();
+    } catch (err) {
+        alert("Update failed.");
+    }
+}
 </script>
 </body>
 </html>
+
