@@ -259,17 +259,38 @@
             if (isHidden) updateAdminDashboard();
         }
 
-        async function updateAdminDashboard() {
-            const list = document.getElementById('reportList');
-            try {
-                const response = await fetch(`${API_URL}/reports`);
-                const reports = await response.json();
+       async function updateAdminDashboard() {
+    const list = document.getElementById('reportList');
+    try {
+        // Ensure API_URL is "/api" to match your Render backend
+        const response = await fetch(`${API_URL}/reports`);
 
-                if (!reports.length) {
-                    list.innerHTML = "<p>No records found.</p>";
-                    return;
-                }
+        if (response.status === 401) {
+            list.innerHTML = "<p style='color:red;'>⚠️ Access Denied. Please login first.</p>";
+            return;
+        }
 
+        const reports = await response.json();
+        list.innerHTML = ""; // Clear the "Loading..." or "No records" text first
+
+        if (!reports || reports.length === 0) {
+            list.innerHTML = "<p>No records found in the database.</p>";
+            return;
+        }
+
+        // Add code here to loop through reports and display them
+        reports.forEach(report => {
+            const item = document.createElement('div');
+            item.className = "report-item";
+            item.innerHTML = `<strong>${report.incident_type}</strong> - ${report.description}`;
+            list.appendChild(item);
+        });
+
+    } catch (error) {
+        console.error("Dashboard error:", error);
+        list.innerHTML = "<p style='color:red;'>Offline: Check Render Logs.</p>";
+    }
+}
                 list.innerHTML = reports.slice().reverse().map(r => `
                     <div style="background:white; padding:15px; margin-bottom:10px; border-radius:4px; border-left:4px solid var(--primary);">
                         <strong>ID: ${escapeHtml(r.id)}</strong><br>
@@ -296,6 +317,7 @@
     </script>
 </body>
 </html>
+
 
 
 
