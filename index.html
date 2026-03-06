@@ -187,8 +187,7 @@
         <div class="status-check">
             <p>Admin Access: <a href="#" onclick="toggleCounselor(); return false;">View Dashboard</a></p>
         </div>
-
-        <script>
+ <script>
     const API_URL = "/api";
     const PANIC_URL = document.getElementById('panicLink').href;
 
@@ -281,7 +280,6 @@
             list.innerHTML = "<p style='color:red;'>Error fetching reports.</p>";
         }
     }
-</script>
         function toggleCounselor() {
             const view = document.getElementById('counselorView');
             const isHidden = getComputedStyle(view).display === 'none';
@@ -307,6 +305,7 @@
 </script>
 </body>
 </html>
+
 
 
 
